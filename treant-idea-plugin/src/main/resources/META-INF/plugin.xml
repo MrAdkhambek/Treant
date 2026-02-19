@@ -1,0 +1,32 @@
+<idea-plugin>
+  <idea-version since-build="251" />
+  <id>com.adkhambek.treant.idea</id>
+  <name>SLF4J</name>
+  <version>1.0.0</version>
+  <vendor>adkhambek</vendor>
+  <description><![CDATA[IDE support for the SLF4J compiler plugin.
+        <ul>
+            <li>Resolves generated <code>logger</code> companion object property for <code>@Slf4j</code>-annotated classes</li>
+            <li>Gutter icon on <code>@Slf4j</code> classes showing generated logger</li>
+            <li>Quick documentation (Ctrl+Q) for generated <code>logger</code> property</li>
+            <li>Inspection warning when manually defining logger in companion of <code>@Slf4j</code> class</li>
+        </ul>]]></description>
+  <change-notes><![CDATA[<b>1.0.0</b>
+        <ul>
+            <li>Bundled FIR compiler plugin provider for K2 analysis</li>
+            <li>Gutter icon line marker for @Slf4j classes</li>
+            <li>Documentation provider for generated logger property</li>
+            <li>Inspection for conflicting manual logger definitions</li>
+        </ul>]]></change-notes>
+  <depends>com.intellij.modules.platform</depends>
+  <depends>org.jetbrains.kotlin</depends>
+  <extensions defaultExtensionNs="org.jetbrains.kotlin">
+    <bundledFirCompilerPluginProvider implementation="com.adkhambek.treant.idea.TreantBundledCompilerPluginProvider" />
+    <supportsKotlinPluginMode supportsK1="false" supportsK2="true" />
+  </extensions>
+  <extensions defaultExtensionNs="com.intellij">
+    <codeInsight.lineMarkerProvider language="kotlin" implementationClass="com.adkhambek.treant.idea.TreantLineMarkerProvider" />
+    <lang.documentationProvider language="kotlin" implementationClass="com.adkhambek.treant.idea.TreantDocumentationProvider" />
+    <localInspection language="kotlin" shortName="TreantManualLogger" displayName="Manual logger conflicts with SLF4J generated logger" groupName="SLF4J" enabledByDefault="true" level="WARNING" implementationClass="com.adkhambek.treant.idea.TreantManualLoggerInspection" />
+  </extensions>
+</idea-plugin>
