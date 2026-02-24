@@ -22,8 +22,8 @@ class TreantSupportPlugin : KotlinCompilerPluginSupportPlugin {
     override fun getCompilerPluginId(): String = "com.adkhambek.treant.compiler"
 
     override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
-        groupId = "com.adkhambek",
+        groupId = "com.adkhambek.treant",
         artifactId = "treant-compiler",
-        version = "1.0-SNAPSHOT",
+        version = "1.0.0",
     )
 }

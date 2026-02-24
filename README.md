@@ -77,7 +77,7 @@ plugins {
 }
 
 dependencies {
-    implementation("com.adkhambek:treant-annotations:<version>")
+    implementation("com.adkhambek.treant:treant-annotations:<version>")
 
     // Add the logging library that matches your annotation:
     implementation("org.slf4j:slf4j-api:<version>")       // for @Slf4j

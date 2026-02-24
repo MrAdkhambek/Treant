@@ -1,17 +1,15 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.treant)
+    application
+}
+
+application {
+    mainClass = "com.adkhambek.treant.sample.AppKt"
 }
 
 group = "com.adkhambek.treant"
 version = "1.0-SNAPSHOT"
-
-// Substitute Maven artifact with local project
-configurations.all {
-    resolutionStrategy.dependencySubstitution {
-        substitute(module("com.adkhambek:treant-compiler")).using(project(":treant-compiler"))
-    }
-}
 
 dependencies {
     implementation(project(":treant-annotations"))
