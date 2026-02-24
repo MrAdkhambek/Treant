@@ -1,21 +1,30 @@
 <idea-plugin>
   <idea-version since-build="251" />
   <id>com.adkhambek.treant.idea</id>
-  <name>SLF4J</name>
+  <name>Treant</name>
   <version>1.0.0</version>
   <vendor>adkhambek</vendor>
-  <description><![CDATA[IDE support for the SLF4J compiler plugin.
+  <description><![CDATA[
+        <p>Treant is a Kotlin compiler plugin that eliminates logging boilerplate by generating a <code>log</code> property
+        in the companion object of annotated classes. Simply annotate your class with <code>@Slf4j</code>, <code>@Log</code>,
+        <code>@Log4j</code>, <code>@Log4j2</code>, <code>@CommonsLog</code>, or <code>@XSlf4j</code> and Treant
+        generates the correct logger instance at compile time.</p>
+
+        <p>This IDE plugin provides full editor support for Treant-generated code:</p>
         <ul>
-            <li>Resolves generated <code>logger</code> companion object property for <code>@Slf4j</code>-annotated classes</li>
-            <li>Gutter icon on <code>@Slf4j</code> classes showing generated logger</li>
-            <li>Quick documentation (Ctrl+Q) for generated <code>logger</code> property</li>
-            <li>Inspection warning when manually defining logger in companion of <code>@Slf4j</code> class</li>
-        </ul>]]></description>
+            <li><b>Symbol resolution</b> — the generated <code>log</code> companion property is recognized by the IDE, enabling code completion and navigation</li>
+            <li><b>Gutter icons</b> — annotated classes display a marker indicating the generated logger</li>
+            <li><b>Quick documentation</b> — hover or press Ctrl+Q on the generated <code>log</code> property to see its type and origin annotation</li>
+            <li><b>Conflict inspection</b> — warns when a manually defined <code>log</code> in a companion object conflicts with the Treant-generated one</li>
+        </ul>
+
+        <p>Requires the Treant Gradle plugin applied to your project. Supports K2 compiler only.</p>
+    ]]></description>
   <change-notes><![CDATA[<b>1.0.0</b>
         <ul>
             <li>Bundled FIR compiler plugin provider for K2 analysis</li>
-            <li>Gutter icon line marker for @Slf4j classes</li>
-            <li>Documentation provider for generated logger property</li>
+            <li>Gutter icon line marker for Treant-annotated classes</li>
+            <li>Documentation provider for generated <code>log</code> property</li>
             <li>Inspection for conflicting manual logger definitions</li>
         </ul>]]></change-notes>
   <depends>com.intellij.modules.platform</depends>
@@ -27,6 +36,6 @@
   <extensions defaultExtensionNs="com.intellij">
     <codeInsight.lineMarkerProvider language="kotlin" implementationClass="com.adkhambek.treant.idea.TreantLineMarkerProvider" />
     <lang.documentationProvider language="kotlin" implementationClass="com.adkhambek.treant.idea.TreantDocumentationProvider" />
-    <localInspection language="kotlin" shortName="TreantManualLogger" displayName="Manual logger conflicts with SLF4J generated logger" groupName="SLF4J" enabledByDefault="true" level="WARNING" implementationClass="com.adkhambek.treant.idea.TreantManualLoggerInspection" />
+    <localInspection language="kotlin" shortName="TreantManualLogger" displayName="Manual log conflicts with Treant generated log" groupName="Treant" enabledByDefault="true" level="WARNING" implementationClass="com.adkhambek.treant.idea.TreantManualLoggerInspection" />
   </extensions>
 </idea-plugin>

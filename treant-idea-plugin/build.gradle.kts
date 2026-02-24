@@ -28,7 +28,7 @@ kotlin {
 intellijPlatform {
     pluginConfiguration {
         id = "com.adkhambek.treant.idea"
-        name = "SLF4J"
+        name = "Treant"
         version = "1.0.0"
         ideaVersion {
             sinceBuild = "251"
