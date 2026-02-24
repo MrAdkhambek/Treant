@@ -16,19 +16,20 @@ import org.jetbrains.kotlin.psi.KtClassOrObject
 
 class TreantLineMarkerProvider : LineMarkerProvider {
 
-    private val treantClassId = ClassId(
-        FqName("com.adkhambek.treant"),
-        Name.identifier("Slf4j"),
-    )
+    private val treantAnnotations = listOf(
+        "Slf4j", "Log", "CommonsLog", "Log4j", "Log4j2", "XSlf4j",
+    ).map { name ->
+        name to ClassId(FqName("com.adkhambek.treant"), Name.identifier(name))
+    }
 
     override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<*>? {
         val leaf = element as? LeafPsiElement ?: return null
         if (leaf.elementType != KtTokens.CLASS_KEYWORD) return null
         val ktClass = leaf.parent as? KtClass ?: return null
-        if (!hasTreantAnnotation(ktClass)) return null
 
+        val annotation = findTreantAnnotation(ktClass) ?: return null
         val fqName = ktClass.fqName?.asString() ?: return null
-        val tooltip = "SLF4J logger generated for $fqName"
+        val tooltip = "$annotation logger generated for $fqName"
 
         return LineMarkerInfo(
             leaf as PsiElement,
@@ -37,14 +38,17 @@ class TreantLineMarkerProvider : LineMarkerProvider {
             { tooltip },
             null,
             GutterIconRenderer.Alignment.RIGHT,
-            { "@Slf4j" },
+            { "@$annotation" },
         )
     }
 
-    private fun hasTreantAnnotation(classOrObject: KtClassOrObject): Boolean {
+    private fun findTreantAnnotation(classOrObject: KtClassOrObject): String? {
         analyze(classOrObject) {
             val symbol = classOrObject.symbol
-            return symbol.annotations.any { it.classId == treantClassId }
+            for ((name, classId) in treantAnnotations) {
+                if (symbol.annotations.any { it.classId == classId }) return name
+            }
         }
+        return null
     }
 }

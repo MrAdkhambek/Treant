@@ -2,12 +2,15 @@
 kotlin = "2.3.0"
 kctfork = "0.12.1"
 junit5 = "6.0.3"
+maven-publish = "0.36.0"
 
 [libraries]
 kctfork-core = { module = "dev.zacsweers.kctfork:core", version.ref = "kctfork" }
 junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit5" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit5" }
+maven-publish = { module = "com.vanniktech.maven.publish:com.vanniktech.maven.publish.gradle.plugin", version.ref = "maven-publish" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
 treant = { id = "com.adkhambek.treant" }

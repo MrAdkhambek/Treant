@@ -1,4 +1,5 @@
 pluginManagement {
+    includeBuild("build-logic")
     includeBuild("treant-gradle-plugin")
     repositories {
         gradlePluginPortal()
