@@ -21,21 +21,14 @@ jobs:
 
       - uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
-          java-version: '21'
+          distribution: zulu
+          java-version: 21
 
       - uses: gradle/actions/setup-gradle@v4
-
-      - name: Decode signing key
-        run: |
-          echo "${{ secrets.SIGNING_KEY }}" | base64 --decode > "${RUNNER_TEMP}/secring.gpg"
-          echo "ORG_GRADLE_PROJECT_signingInMemoryKey<<SIGNING_KEY_EOF" >> $GITHUB_ENV
-          echo "${{ secrets.SIGNING_KEY }}" | base64 --decode >> $GITHUB_ENV
-          echo "SIGNING_KEY_EOF" >> $GITHUB_ENV
 
       - name: Publish treant-annotations and treant-compiler
         run: ./gradlew :treant-annotations:publish :treant-compiler:publish
 
       - name: Publish treant-gradle-plugin
         working-directory: treant-gradle-plugin
-        run: ../gradlew publish
+        run: ../gradlew publishAllPublicationsToMavenCentralRepository
