@@ -1,14 +1,17 @@
 # Treant
 
-### (⚠️ not published yet)
+[![Maven Central](https://img.shields.io/maven-central/v/com.adkhambek.treant/treant-annotations)](https://central.sonatype.com/namespace/com.adkhambek.screen)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/MrAdkhambek/Treant/publish.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+
+A Kotlin K2 compiler plugin that generates logger instances at compile time — inspired
+by [Lombok](https://projectlombok.org/).
+Annotate any class and use `log` directly, no boilerplate needed.
 
 <p align="center">
   <img src="media/trant.png" alt="Treant" width="60%" height="60%" />
 </p>
-
-A Kotlin compiler plugin that generates logger instances at compile time — inspired
-by [Lombok](https://projectlombok.org/).
-Annotate any class and use `log` directly, no boilerplate needed.
 
 ## Supported Logging Frameworks
 
