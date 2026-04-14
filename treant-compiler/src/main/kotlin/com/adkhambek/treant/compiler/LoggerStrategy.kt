@@ -225,12 +225,15 @@ sealed class LoggerStrategy {
                 ?: error(JUL_CLASSPATH_ERROR)
 
             // 2. Find the overload: Logger.getLogger(String)
-            val getLoggerFn = julLoggerClass.owner.functions.first {
+            val getLoggerFn = julLoggerClass.owner.functions.firstOrNull {
                 it.name.asString() == GET_LOGGER && regularParameterCount(it.parameters) == 1
                         && it.parameters.any { p ->
                     p.kind == IrParameterKind.Regular && p.type.classOrNull()?.owner?.name?.asString() == STRING_SIMPLE_NAME
                 }
-            }
+            } ?: error(
+                "Could not find $GET_LOGGER($STRING_SIMPLE_NAME) in ${loggerClassId.asFqNameString()}. " +
+                        "Ensure the correct version of the logging library is on the classpath."
+            )
 
             // 3. Build the IR tree:
             //    Logger.getLogger("com.example.MyService")
@@ -354,18 +357,25 @@ private fun buildClassBasedInitializer(
         ?: error(classpathError)
 
     // 2. Find the overload that takes a Class<?> parameter.
-    val getLoggerFn = factoryClass.owner.functions.first {
+    val getLoggerFn = factoryClass.owner.functions.firstOrNull {
         it.name.asString() == methodName && regularParameterCount(it.parameters) == 1
                 && it.parameters.any { p ->
             p.kind == IrParameterKind.Regular && p.type.classOrNull()?.owner?.name?.asString() == CLASS_SIMPLE_NAME
         }
-    }
+    } ?: error(
+        "Could not find $methodName($CLASS_SIMPLE_NAME) in ${factoryClassId.asFqNameString()}. " +
+                "Ensure the correct version of the logging library is on the classpath."
+    )
 
     // 3. Look up java.lang.Class and find Class.forName(String).
-    val javaLangClass = pluginContext.referenceClass(JAVA_LANG_CLASS_ID)!!
-    val forNameFn = javaLangClass.owner.functions.first {
+    val javaLangClass = pluginContext.referenceClass(JAVA_LANG_CLASS_ID)
+        ?: error("Could not find java.lang.Class in the classpath.")
+    val forNameFn = javaLangClass.owner.functions.firstOrNull {
         it.name.asString() == FOR_NAME && regularParameterCount(it.parameters) == 1
-    }
+    } ?: error(
+        "Could not find $FOR_NAME(String) in ${JAVA_LANG_CLASS_ID.asFqNameString()}. " +
+                "This is unexpected — ensure the JDK is on the classpath."
+    )
 
     // 4. Build the IR tree:
     //    FactoryClass.methodName(Class.forName("com.example.MyService"))
