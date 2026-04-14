@@ -159,8 +159,13 @@ val AllStubs = listOf(
 
 @OptIn(ExperimentalCompilerApi::class)
 fun compileWithTreantPlugin(vararg sources: SourceFile): JvmCompilationResult {
+    return compileWithTreantPlugin(AllStubs, *sources)
+}
+
+@OptIn(ExperimentalCompilerApi::class)
+fun compileWithTreantPlugin(stubs: List<SourceFile>, vararg sources: SourceFile): JvmCompilationResult {
     return KotlinCompilation().apply {
-        this.sources = AllStubs + sources.toList()
+        this.sources = stubs + sources.toList()
         compilerPluginRegistrars = listOf(TreantCompilerPluginRegistrar())
         commandLineProcessors = listOf(TreantCommandLineProcessor())
         languageVersion = "2.0"
