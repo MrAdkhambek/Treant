@@ -14,5 +14,6 @@ import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
 class TreantFirExtensionRegistrar : FirExtensionRegistrar() {
     override fun ExtensionRegistrarContext.configurePlugin() {
         +{ session: FirSession -> TreantFirDeclarationGenerationExtension(session) }
+        +{ session: FirSession -> TreantFirCheckersExtension(session) }
     }
 }
