@@ -1,6 +1,6 @@
 # Treant
 
-[![Maven Central](https://img.shields.io/maven-central/v/com.adkhambek.treant/treant-annotations)](https://central.sonatype.com/namespace/com.adkhambek.screen)
+[![Maven Central](https://img.shields.io/maven-central/v/com.adkhambek.treant/treant-annotations)](https://central.sonatype.com/namespace/com.adkhambek.treant)
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/MrAdkhambek/Treant/publish.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
