@@ -2,21 +2,11 @@ package com.adkhambek.treant.idea
 
 import com.intellij.lang.documentation.AbstractDocumentationProvider
 import com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.analysis.api.analyze
-import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtProperty
 
 class TreantDocumentationProvider : AbstractDocumentationProvider() {
-
-    private val treantAnnotations = listOf(
-        "Slf4j", "Log", "CommonsLog", "Log4j", "Log4j2", "XSlf4j",
-    ).map { name ->
-        name to ClassId(FqName("com.adkhambek.treant"), Name.identifier(name))
-    }
 
     override fun generateDoc(element: PsiElement, originalElement: PsiElement?): String? {
         val property = element as? KtProperty ?: return null
@@ -28,7 +18,7 @@ class TreantDocumentationProvider : AbstractDocumentationProvider() {
         val ownerClass = companion.parent?.parent as? KtClassOrObject ?: return null
         val ownerFqName = ownerClass.fqName?.asString() ?: return null
 
-        val annotation = findTreantAnnotation(ownerClass) ?: return null
+        val annotation = TreantAnnotations.findAnnotation(ownerClass) ?: return null
 
         return when (annotation) {
             "Slf4j" -> buildString {
@@ -89,13 +79,4 @@ class TreantDocumentationProvider : AbstractDocumentationProvider() {
         }
     }
 
-    private fun findTreantAnnotation(classOrObject: KtClassOrObject): String? {
-        analyze(classOrObject) {
-            val symbol = classOrObject.symbol
-            for ((name, classId) in treantAnnotations) {
-                if (symbol.annotations.any { it.classId == classId }) return name
-            }
-        }
-        return null
-    }
 }

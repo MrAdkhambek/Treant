@@ -3,22 +3,12 @@ package com.adkhambek.treant.idea
 import com.intellij.codeInspection.LocalInspectionTool
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.psi.PsiElementVisitor
-import org.jetbrains.kotlin.analysis.api.analyze
-import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtVisitorVoid
 
 class TreantManualLoggerInspection : LocalInspectionTool() {
-
-    private val treantAnnotations = listOf(
-        "Slf4j", "Log", "CommonsLog", "Log4j", "Log4j2", "XSlf4j",
-    ).map { name ->
-        name to ClassId(FqName("com.adkhambek.treant"), Name.identifier(name))
-    }
 
     override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor {
         return object : KtVisitorVoid() {
@@ -30,7 +20,7 @@ class TreantManualLoggerInspection : LocalInspectionTool() {
                 if (!companion.isCompanion()) return
                 val ownerClass = companion.parent?.parent as? KtClassOrObject ?: return
 
-                val annotation = findTreantAnnotation(ownerClass) ?: return
+                val annotation = TreantAnnotations.findAnnotation(ownerClass) ?: return
 
                 holder.registerProblem(
                     property.nameIdentifier ?: property,
@@ -38,15 +28,5 @@ class TreantManualLoggerInspection : LocalInspectionTool() {
                 )
             }
         }
-    }
-
-    private fun findTreantAnnotation(classOrObject: KtClassOrObject): String? {
-        analyze(classOrObject) {
-            val symbol = classOrObject.symbol
-            for ((name, classId) in treantAnnotations) {
-                if (symbol.annotations.any { it.classId == classId }) return name
-            }
-        }
-        return null
     }
 }
