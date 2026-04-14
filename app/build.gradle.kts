@@ -12,7 +12,7 @@ group = "com.adkhambek.treant"
 version = "1.0-SNAPSHOT"
 
 dependencies {
-    implementation(project(":treant-annotations"))
+    implementation(libs.treant.annotations)
 
     implementation("org.slf4j:slf4j-api:2.0.16")
     implementation("org.slf4j:slf4j-ext:2.0.16")

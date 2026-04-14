@@ -1,10 +1,12 @@
 [versions]
 kotlin = "2.3.0"
+treant = "1.0.0"
 kctfork = "0.12.1"
 junit5 = "6.0.3"
 maven-publish = "0.36.0"
 
 [libraries]
+treant-annotations = { module = "com.adkhambek.treant:treant-annotations", version.ref = "treant" }
 kctfork-core = { module = "dev.zacsweers.kctfork:core", version.ref = "kctfork" }
 junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit5" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit5" }
@@ -13,4 +15,4 @@ maven-publish = { module = "com.vanniktech.maven.publish:com.vanniktech.maven.pu
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
-treant = { id = "com.adkhambek.treant" }
+treant = { id = "com.adkhambek.treant", version.ref = "treant" }
