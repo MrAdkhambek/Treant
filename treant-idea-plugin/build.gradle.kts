@@ -15,7 +15,12 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        local("/Applications/IntelliJ IDEA.app")
+        val intellijPath: String? by project
+        if (intellijPath != null) {
+            local(intellijPath!!)
+        } else {
+            intellijIdeaCommunity("2025.1")
+        }
         bundledPlugin("org.jetbrains.kotlin")
     }
     implementation(files("libs/treant-compiler.jar"))
