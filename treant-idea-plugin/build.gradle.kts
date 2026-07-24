@@ -1,6 +1,6 @@
 plugins {
-    id("org.jetbrains.intellij.platform") version "2.5.0"
-    kotlin("jvm") version "2.3.0"
+    id("org.jetbrains.intellij.platform") version "2.18.1"
+    kotlin("jvm") version "2.4.10"
 }
 
 group = "com.adkhambek"

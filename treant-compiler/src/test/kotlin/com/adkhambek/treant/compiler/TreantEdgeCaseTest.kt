@@ -28,26 +28,10 @@ class TreantEdgeCaseTest {
     // ── Multiple annotations on the same class ─────────────────────────────
 
     @Test
-    fun `multiple annotations on same class compiles successfully`() {
-        val source = SourceFile.kotlin(
-            "MultiAnnotated.kt",
-            """
-            import com.adkhambek.treant.Slf4j
-            import com.adkhambek.treant.Log
-
-            @Slf4j
-            @Log
-            class MultiAnnotated
-            """,
-        )
-        val result = compileWithTreantPlugin(source)
-        assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode) {
-            "Expected compilation to succeed with multiple annotations (first match wins). Output:\n${result.messages}"
-        }
-    }
-
-    @Test
-    fun `multiple annotations - first annotation determines logger type`() {
+    fun `multiple annotations on same class are rejected`() {
+        // Superseded behaviour: this section used to assert that several annotations
+        // compiled with "first match wins". That was replaced by an explicit compiler
+        // error; TreantMultipleAnnotationTest owns the detailed coverage.
         val source = SourceFile.kotlin(
             "MultiAnnotated.kt",
             """
@@ -62,32 +46,8 @@ class TreantEdgeCaseTest {
             """,
         )
         val result = compileWithTreantPlugin(source)
-        assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode)
-        assertLoggerFieldExists(result, "com.example.MultiAnnotated")
-    }
-
-    @Test
-    fun `multiple annotations - log is accessible from within class`() {
-        val source = SourceFile.kotlin(
-            "MultiAnnotated.kt",
-            """
-            package com.example
-
-            import com.adkhambek.treant.Slf4j
-            import com.adkhambek.treant.CommonsLog
-
-            @Slf4j
-            @CommonsLog
-            class MultiAnnotated {
-                fun doWork() {
-                    log.info("working")
-                }
-            }
-            """,
-        )
-        val result = compileWithTreantPlugin(source)
-        assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode) {
-            "Expected log to be accessible with multiple annotations. Output:\n${result.messages}"
+        assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, result.exitCode) {
+            "Expected multiple annotations to be rejected. Output:\n${result.messages}"
         }
     }
 

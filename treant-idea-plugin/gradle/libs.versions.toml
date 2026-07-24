@@ -1,7 +1,7 @@
 [versions]
-kotlin = "2.3.0"
-kctfork = "0.12.1"
-junit5 = "6.0.3"
+kotlin = "2.4.10"
+kctfork = "0.13.0"
+junit5 = "6.1.2"
 
 [libraries]
 kctfork-core = { module = "dev.zacsweers.kctfork:core", version.ref = "kctfork" }
