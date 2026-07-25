@@ -30,3 +30,10 @@ kotlin {
 tasks.test {
     useJUnitPlatform()
 }
+
+// This module's only Java source, DiagnosticMapFactory, is deliberately package-private,
+// so javadoc finds nothing to document and treats that as an error — which failed the
+// release. Maven Central requires the javadoc jar to exist, not to have content.
+tasks.withType<Javadoc>().configureEach {
+    isFailOnError = false
+}
