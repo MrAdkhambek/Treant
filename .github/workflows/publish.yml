@@ -26,9 +26,13 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v6
 
+      # publishToMavenCentral, not `publish` or publishAllPublicationsToMavenCentral-
+      # Repository: only this task drives the Portal deployment lifecycle, and therefore
+      # only it honours the validateDeployment setting. The others upload a bundle and
+      # exit, which is why rejected deployments used to leave a green run.
       - name: Publish treant-annotations and treant-compiler
-        run: ./gradlew :treant-annotations:publish :treant-compiler:publish
+        run: ./gradlew :treant-annotations:publishToMavenCentral :treant-compiler:publishToMavenCentral
 
       - name: Publish treant-gradle-plugin
         working-directory: treant-gradle-plugin
-        run: ../gradlew publishAllPublicationsToMavenCentralRepository
+        run: ../gradlew publishToMavenCentral
