@@ -45,13 +45,23 @@ jobs:
         working-directory: treant-idea-plugin
         run: ../gradlew buildPlugin
 
+      # On workflow_dispatch there is no tag, so keep the ZIP as a run artifact instead of
+      # inventing a release named after the branch.
+      - name: Upload the plugin ZIP as a build artifact
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v7
+        with:
+          name: treant-idea-plugin
+          path: treant-idea-plugin/build/distributions/*.zip
+
       - name: Attach the plugin ZIP to the release
+        if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
           ZIP=$(ls treant-idea-plugin/build/distributions/*.zip)
           echo "Uploading $ZIP to release $TAG"
-          # workflow_dispatch runs have no tag release; create one only when missing.
+          # The release may not exist yet if the tag was pushed without one.
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --generate-notes
           gh release upload "$TAG" "$ZIP" --clobber
