@@ -65,7 +65,7 @@ class TreantFirDeclarationGenerationExtension(
     // Look up which LoggerStrategy (Slf4j or Jul) matches this class.
     // Returns null if the class has no recognized annotation.
     private fun FirClassSymbol<*>.findStrategy(): LoggerStrategy? =
-        LoggerStrategy.all.find { session.predicateBasedProvider.matches(it.predicate, this) }
+        LoggerStrategy.entries.find { session.predicateBasedProvider.matches(it.predicate, this) }
 
     // Step 2: The compiler asks "does this class need any new nested classifiers?"
     // If the class is annotated and has no companion object yet, we tell the
@@ -177,7 +177,7 @@ class TreantFirDeclarationGenerationExtension(
     ): List<FirPropertySymbol> {
         // Quick check: only handle property names that match a strategy.
         val name = callableId.callableName
-        if (LoggerStrategy.all.none { it.propertyName == name }) return emptyList()
+        if (LoggerStrategy.entries.none { it.propertyName == name }) return emptyList()
 
         // Resolve the owning class symbol.
         // `context?.owner` is available when the compiler already knows the owner.
@@ -224,6 +224,6 @@ class TreantFirDeclarationGenerationExtension(
     // Step 1 (called first): Tell the compiler which predicates we use.
     // Without this, predicateBasedProvider.matches() would never return true.
     override fun FirDeclarationPredicateRegistrar.registerPredicates() {
-        LoggerStrategy.all.forEach { register(it.predicate) }
+        LoggerStrategy.entries.forEach { register(it.predicate) }
     }
 }

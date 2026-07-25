@@ -64,13 +64,13 @@ than a silent pick:
 
 ```
 Only one Treant logging annotation is allowed per class.
+Remove all but one of: @Slf4j, @Log, @CommonsLog, @Log4j, @Log4j2, @XSlf4j.
 ```
 
 ## Setup
 
-Apply the Gradle plugin and add the annotations dependency:
-
-Everything resolves from Maven Central, so the default repositories are enough:
+Treant is published to Maven Central, which is not part of plugin resolution by default,
+so add it there:
 
 ```kotlin
 // settings.gradle.kts
@@ -81,6 +81,8 @@ pluginManagement {
     }
 }
 ```
+
+Then apply the plugin and add the annotations dependency:
 
 ```kotlin
 // build.gradle.kts

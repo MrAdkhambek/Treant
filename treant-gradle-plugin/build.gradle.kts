@@ -1,7 +1,7 @@
 plugins {
     `java-gradle-plugin`
-    kotlin("jvm") version "2.4.10"
-    id("com.vanniktech.maven.publish") version "0.37.0"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.maven.publish)
 }
 
 repositories {
@@ -9,7 +9,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin-api:2.4.10")
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin-api:${libs.versions.kotlin.get()}")
 }
 
 val generateVersionFile = tasks.register("generateTreantVersion") {

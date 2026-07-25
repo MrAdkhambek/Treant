@@ -23,14 +23,13 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
-import org.jetbrains.kotlin.ir.types.IrSimpleType
-import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
-// The generated property will be named "log" (e.g. `private val log: Logger`).
+// The generated property is named "log" (e.g. `private val log: Logger`).
 private val LOG_PROPERTY_NAME = Name.identifier("log")
 
 // Method names looked up in the IR tree.
@@ -44,173 +43,148 @@ private const val STRING_SIMPLE_NAME = "String"  // getLogger(String)
 private fun classId(packageName: String, simpleName: String) =
     ClassId(FqName(packageName), Name.identifier(simpleName))
 
-// java.lang.Class — needed for the Class.forName() call in class-based initializers.
+private fun annotationId(simpleName: String) = classId("com.adkhambek.treant", simpleName)
+
+// java.lang.Class — needed for the Class.forName() call.
 private val JAVA_LANG_CLASS_ID = classId("java.lang", CLASS_SIMPLE_NAME)
 
-private fun missingLibrary(annotation: String, coordinates: String) =
-    "@$annotation requires $coordinates on the classpath. " +
-        "Add: implementation(\"$coordinates:<version>\")"
+/** How a framework's factory identifies the logger: by `Class` or by name. */
+private enum class NameArgument(val parameterSimpleName: String) {
+    CLASS(CLASS_SIMPLE_NAME),
+    STRING(STRING_SIMPLE_NAME),
+}
 
-// ==============================================================================
-// LoggerStrategy — one per supported logging framework
-// ==============================================================================
-//
-// A strategy carries everything that differs between frameworks:
-//
-//   declarationKey   FIR: stamps generated declarations
-//   predicate        FIR: matches annotated classes
-//   loggerClassId    FIR: type of the "log" property
-//   propertyName     FIR + IR: the name "log"
-//   buildInitializer IR:  builds the factory call
-//
-// Every framework except JUL follows the same shape —
-// `Factory.method(Class.forName("com.example.MyService"))` — so those are declared
-// as [ClassBased] and need no code of their own, only the three values that vary.
-//
-// To add a framework: add an annotation, a predicate, a declaration key, then one
-// `data object` below. The FIR extension and IR transformer need no changes.
-// ==============================================================================
-
-sealed class LoggerStrategy(
+/**
+ * One entry per supported logging framework, holding everything that differs between them:
+ *
+ *   annotationClassId  the annotation that selects this framework
+ *   declarationKey     FIR: stamps generated declarations
+ *   predicate          FIR: matches annotated classes
+ *   loggerClassId      FIR: type of the "log" property
+ *   factoryClassId     IR:  class exposing the factory method (defaults to the logger itself)
+ *   factoryMethod      IR:  the factory method name
+ *   nameArgument       IR:  whether that method takes a Class or a String
+ *
+ * An enum rather than a sealed hierarchy: the frameworks differ only in data, and nothing
+ * dispatches on the specific type. It also makes [entries] the registration list, which
+ * cannot fall out of sync the way a hand-maintained one could.
+ *
+ * To add a framework: add an annotation, a predicate, a declaration key, and one entry
+ * here. Everything that enumerates the frameworks — the FIR extension, the IR transformer,
+ * the one-annotation-per-class checker and its error message — derives from [entries].
+ *
+ * Declaration order is observable: TreantFirDeclarationGenerationExtension takes the first
+ * matching entry when a class carries more than one annotation.
+ */
+enum class LoggerStrategy(
     val declarationKey: GeneratedDeclarationKey,
     val predicate: DeclarationPredicate,
+    val annotationClassId: ClassId,
     val loggerClassId: ClassId,
+    private val factoryClassId: ClassId = loggerClassId,
+    private val factoryMethod: String = GET_LOGGER,
+    private val nameArgument: NameArgument = NameArgument.CLASS,
 ) {
-    // Name of the generated property.
-    open val propertyName: Name get() = LOG_PROPERTY_NAME
-
-    // Builds the IR expression that initializes the logger. Called during the IR phase
-    // by TreantIrElementTransformer, with the fully qualified name of the annotated class.
-    @OptIn(UnsafeDuringIrConstructionAPI::class)
-    abstract fun buildInitializer(
-        builder: DeclarationIrBuilder,
-        pluginContext: IrPluginContext,
-        outerFqName: String,
-    ): IrExpression
-
-    /**
-     * Frameworks whose logger is obtained as `Factory.method(Class.forName(name))`.
-     * The initializer is identical for all of them, so subclasses supply only the
-     * factory class, the method name, and the message shown when the library is absent.
-     */
-    sealed class ClassBased(
-        declarationKey: GeneratedDeclarationKey,
-        predicate: DeclarationPredicate,
-        loggerClassId: ClassId,
-        private val factoryClassId: ClassId,
-        private val factoryMethod: String,
-        private val classpathError: String,
-    ) : LoggerStrategy(declarationKey, predicate, loggerClassId) {
-
-        @OptIn(UnsafeDuringIrConstructionAPI::class)
-        final override fun buildInitializer(
-            builder: DeclarationIrBuilder,
-            pluginContext: IrPluginContext,
-            outerFqName: String,
-        ): IrExpression {
-            val factory = pluginContext.referenceClass(factoryClassId) ?: error(classpathError)
-            val getLogger = factory.findSingleArgFunction(factoryMethod, CLASS_SIMPLE_NAME)
-
-            val javaLangClass = pluginContext.referenceClass(JAVA_LANG_CLASS_ID)
-                ?: error("Could not find java.lang.Class in the classpath.")
-            val forName = javaLangClass.findSingleArgFunction(FOR_NAME, STRING_SIMPLE_NAME)
-
-            // Factory.method(Class.forName("com.example.MyService"))
-            return builder.irCall(getLogger).apply {
-                arguments[0] = builder.irCall(forName).apply {
-                    arguments[0] = builder.irString(outerFqName)
-                }
-            }
-        }
-    }
-
-    // Generates: LoggerFactory.getLogger(Class.forName("com.example.MyService"))
-    data object Slf4j : ClassBased(
+    // LoggerFactory.getLogger(Class.forName("com.example.MyService"))
+    Slf4j(
         Slf4jDeclarationKey, slf4jPredicate,
+        annotationClassId = annotationId("Slf4j"),
         loggerClassId = classId("org.slf4j", "Logger"),
         factoryClassId = classId("org.slf4j", "LoggerFactory"),
-        factoryMethod = GET_LOGGER,
-        classpathError = missingLibrary("Slf4j", "org.slf4j:slf4j-api"),
-    )
+    ),
 
-    // Generates: LogFactory.getLog(Class.forName("com.example.MyService"))
-    data object CommonsLog : ClassBased(
+    // java.util.logging.Logger.getLogger("com.example.MyService")
+    Jul(
+        JulDeclarationKey, julPredicate,
+        annotationClassId = annotationId("Log"),
+        loggerClassId = classId("java.util.logging", "Logger"),
+        nameArgument = NameArgument.STRING,
+    ),
+
+    // LogFactory.getLog(Class.forName("com.example.MyService"))
+    CommonsLog(
         CommonsLogDeclarationKey, commonsLogPredicate,
+        annotationClassId = annotationId("CommonsLog"),
         loggerClassId = classId("org.apache.commons.logging", "Log"),
         factoryClassId = classId("org.apache.commons.logging", "LogFactory"),
         factoryMethod = "getLog",
-        classpathError = missingLibrary("CommonsLog", "commons-logging:commons-logging"),
-    )
+    ),
 
-    // Generates: Logger.getLogger(Class.forName("com.example.MyService"))
-    data object Log4j : ClassBased(
+    // Logger.getLogger(Class.forName("com.example.MyService"))
+    Log4j(
         Log4jDeclarationKey, log4jPredicate,
+        annotationClassId = annotationId("Log4j"),
         loggerClassId = classId("org.apache.log4j", "Logger"),
-        factoryClassId = classId("org.apache.log4j", "Logger"),
-        factoryMethod = GET_LOGGER,
-        classpathError = missingLibrary("Log4j", "log4j:log4j"),
-    )
+    ),
 
-    // Generates: LogManager.getLogger(Class.forName("com.example.MyService"))
-    data object Log4j2 : ClassBased(
+    // LogManager.getLogger(Class.forName("com.example.MyService"))
+    Log4j2(
         Log4j2DeclarationKey, log4j2Predicate,
+        annotationClassId = annotationId("Log4j2"),
         loggerClassId = classId("org.apache.logging.log4j", "Logger"),
         factoryClassId = classId("org.apache.logging.log4j", "LogManager"),
-        factoryMethod = GET_LOGGER,
-        classpathError = missingLibrary("Log4j2", "org.apache.logging.log4j:log4j-api"),
-    )
+    ),
 
-    // Generates: XLoggerFactory.getXLogger(Class.forName("com.example.MyService"))
-    data object XSlf4j : ClassBased(
+    // XLoggerFactory.getXLogger(Class.forName("com.example.MyService"))
+    XSlf4j(
         XSlf4jDeclarationKey, xSlf4jPredicate,
+        annotationClassId = annotationId("XSlf4j"),
         loggerClassId = classId("org.slf4j.ext", "XLogger"),
         factoryClassId = classId("org.slf4j.ext", "XLoggerFactory"),
         factoryMethod = "getXLogger",
-        classpathError = missingLibrary("XSlf4j", "org.slf4j:slf4j-ext"),
-    )
+    ),
+    ;
+
+    /** Name of the generated property. */
+    val propertyName: Name get() = LOG_PROPERTY_NAME
 
     /**
-     * The one framework that does not follow the class-based shape: JUL takes the
-     * logger name as a String, and lives in the JDK rather than in a library.
+     * Builds the IR expression initializing the logger, called during the IR phase with
+     * the fully qualified name of the annotated class.
      *
-     * Generates: java.util.logging.Logger.getLogger("com.example.MyService")
+     * The `error` calls are internal invariants, not user-facing messages:
+     * TreantFirDeclarationGenerationExtension does not generate the property at all when
+     * the logger class is absent, and every supported framework ships its factory in the
+     * same artifact as its logger — so reaching them means the classpath is inconsistent
+     * in a way the frontend already accepted.
      */
-    data object Jul : LoggerStrategy(
-        JulDeclarationKey, julPredicate,
-        loggerClassId = classId("java.util.logging", "Logger"),
-    ) {
-        @OptIn(UnsafeDuringIrConstructionAPI::class)
-        override fun buildInitializer(
-            builder: DeclarationIrBuilder,
-            pluginContext: IrPluginContext,
-            outerFqName: String,
-        ): IrExpression {
-            val julLogger = pluginContext.referenceClass(loggerClassId)
-                ?: error("@Log requires java.util.logging.Logger on the classpath.")
-            val getLogger = julLogger.findSingleArgFunction(GET_LOGGER, STRING_SIMPLE_NAME)
+    @OptIn(UnsafeDuringIrConstructionAPI::class)
+    fun buildInitializer(
+        builder: DeclarationIrBuilder,
+        pluginContext: IrPluginContext,
+        outerFqName: String,
+    ): IrExpression {
+        val factory = pluginContext.referenceClass(factoryClassId)
+            ?: error("treant-internal: ${factoryClassId.asFqNameString()} unexpectedly absent")
+        val getLogger = factory.findSingleArgFunction(factoryMethod, nameArgument.parameterSimpleName)
 
-            return builder.irCall(getLogger).apply {
-                arguments[0] = builder.irString(outerFqName)
+        val argument = when (nameArgument) {
+            NameArgument.STRING -> builder.irString(outerFqName)
+            NameArgument.CLASS -> {
+                val javaLangClass = pluginContext.referenceClass(JAVA_LANG_CLASS_ID)
+                    ?: error("treant-internal: java.lang.Class unexpectedly absent")
+                val forName = javaLangClass.findSingleArgFunction(FOR_NAME, STRING_SIMPLE_NAME)
+                builder.irCall(forName).apply { arguments[0] = builder.irString(outerFqName) }
             }
         }
+
+        return builder.irCall(getLogger).apply { arguments[0] = argument }
     }
 
     companion object {
-        // All registered strategies. Iterated during FIR predicate registration and
-        // when looking up the strategy for a given class.
-        val all: List<LoggerStrategy> = listOf(Slf4j, Jul, CommonsLog, Log4j, Log4j2, XSlf4j)
-
         // Reverse lookup: given a declaration key stamped on an IR property, find the
         // strategy that created it. Used by TreantIrElementTransformer.
         fun fromKey(key: GeneratedDeclarationKey): LoggerStrategy? =
-            all.find { it.declarationKey == key }
+            entries.find { it.declarationKey == key }
     }
 }
 
 /**
  * Finds the overload of [methodName] taking exactly one regular parameter of the given
- * simple type name — how the SLF4J-style `getLogger(Class)` is told apart from
- * `getLogger(String)`.
+ * simple type name — how `getLogger(Class)` is told apart from `getLogger(String)`.
+ *
+ * The name is compared first so the parameter list is only materialized for same-named
+ * overloads rather than for every function on the class.
  */
 @OptIn(UnsafeDuringIrConstructionAPI::class)
 private fun IrClassSymbol.findSingleArgFunction(
@@ -218,17 +192,13 @@ private fun IrClassSymbol.findSingleArgFunction(
     parameterSimpleName: String,
 ): IrSimpleFunctionSymbol {
     val match = owner.functions.firstOrNull { function ->
+        if (function.name.asString() != methodName) return@firstOrNull false
         val regular = function.parameters.filter { it.kind == IrParameterKind.Regular }
-        function.name.asString() == methodName &&
-            regular.size == 1 &&
-            regular.single().type.classOrNull()?.owner?.name?.asString() == parameterSimpleName
+        regular.size == 1 &&
+            regular.single().type.classOrNull?.owner?.name?.asString() == parameterSimpleName
     }
     return match?.symbol ?: error(
         "Could not find $methodName($parameterSimpleName) in ${owner.name}. " +
             "Ensure the correct version of the logging library is on the classpath."
     )
 }
-
-// Safely casts an IrType to its class symbol, or null if it isn't a simple class type.
-private fun IrType.classOrNull(): IrClassSymbol? =
-    (this as? IrSimpleType)?.classifier as? IrClassSymbol
