@@ -57,15 +57,25 @@ class AnotherService {
 }
 ```
 
+### One annotation per class
+
+A class may carry at most one Treant annotation. Two or more is a compile error rather
+than a silent pick:
+
+```
+Only one Treant logging annotation is allowed per class.
+```
+
 ## Setup
 
 Apply the Gradle plugin and add the annotations dependency:
+
+Everything resolves from Maven Central, so the default repositories are enough:
 
 ```kotlin
 // settings.gradle.kts
 pluginManagement {
     repositories {
-        mavenLocal()
         gradlePluginPortal()
         mavenCentral()
     }
@@ -127,9 +137,13 @@ Treant hooks into two phases of the Kotlin compiler:
 
 | Tool   | Version |
 |--------|---------|
-| Kotlin | 2.3.0   |
+| Kotlin | 2.4.10  |
 | Java   | 21      |
-| Gradle | 9.0.0   |
+| Gradle | 9.6.1   |
+
+Treant is a compiler plugin, so it binds to Kotlin's internal APIs: **your project must
+use the same Kotlin version Treant was built against.** A mismatch fails the build rather
+than degrading gracefully.
 
 ---
 

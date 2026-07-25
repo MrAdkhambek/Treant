@@ -4,6 +4,13 @@ treant = "1.0.0"
 kctfork = "0.13.0"
 junit5 = "6.1.2"
 maven-publish = "0.37.0"
+slf4j = "2.0.18"
+logback = "1.6.0"
+commons-logging = "1.4.0"
+log4j2 = "2.26.1"
+# Log4j 1.x is end-of-life; 1.2.17 is its final release and is kept only so the
+# sample can demonstrate the @Log4j backend.
+log4j1 = "1.2.17"
 
 [libraries]
 treant-annotations = { module = "com.adkhambek.treant:treant-annotations", version.ref = "treant" }
@@ -11,6 +18,14 @@ kctfork-core = { module = "dev.zacsweers.kctfork:core", version.ref = "kctfork" 
 junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit5" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit5" }
 maven-publish = { module = "com.vanniktech.maven.publish:com.vanniktech.maven.publish.gradle.plugin", version.ref = "maven-publish" }
+
+# Logging backends, used by the sample to exercise each supported annotation.
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+slf4j-ext = { module = "org.slf4j:slf4j-ext", version.ref = "slf4j" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+commons-logging = { module = "commons-logging:commons-logging", version.ref = "commons-logging" }
+log4j = { module = "log4j:log4j", version.ref = "log4j1" }
+log4j2-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j2" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
