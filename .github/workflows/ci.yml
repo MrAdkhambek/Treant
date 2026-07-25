@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,3 +24,23 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
 
       - run: ./gradlew build
+
+      # treant-gradle-plugin and treant-idea-plugin are separate Gradle builds that the
+      # root `build` never reaches. Without these steps a change can break either and still
+      # show a green tick — which is how the bundled compiler jar drifted two Kotlin
+      # versions behind everything else without anything noticing.
+      - name: Build treant-gradle-plugin
+        working-directory: treant-gradle-plugin
+        run: ../gradlew build
+
+      - name: Build treant-idea-plugin
+        working-directory: treant-idea-plugin
+        run: ../gradlew build verifyPluginStructure
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports
+          path: '**/build/reports/tests/**'
+          retention-days: 7

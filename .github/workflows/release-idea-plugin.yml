@@ -1,0 +1,57 @@
+name: Release IDEA plugin
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+# Kept separate from the Maven Central workflow so neither blocks the other: a Central
+# upload failure should not withhold the IDE plugin, and vice versa.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: zulu
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      # treant-idea-plugin bundles the compiler so the IDE can run the FIR plugin against
+      # its own Kotlin. libs/treant-compiler.jar is checked in and goes stale silently —
+      # it was last found built against a Kotlin two versions behind everything else — so
+      # the release always rebuilds it from source rather than trusting the committed copy.
+      - name: Rebuild the bundled compiler jar from source
+        run: |
+          ./gradlew :treant-compiler:jar
+          cp treant-compiler/build/libs/treant-compiler.jar treant-idea-plugin/libs/treant-compiler.jar
+          unzip -l treant-idea-plugin/libs/treant-compiler.jar \
+            | grep -q 'TreantCompilerPluginRegistrar.class' \
+            || { echo "::error::bundled jar is missing the plugin registrar"; exit 1; }
+
+      - name: Validate plugin descriptor and structure
+        working-directory: treant-idea-plugin
+        run: ../gradlew verifyPluginProjectConfiguration verifyPluginStructure
+
+      - name: Build plugin distribution
+        working-directory: treant-idea-plugin
+        run: ../gradlew buildPlugin
+
+      - name: Attach the plugin ZIP to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          ZIP=$(ls treant-idea-plugin/build/distributions/*.zip)
+          echo "Uploading $ZIP to release $TAG"
+          # workflow_dispatch runs have no tag release; create one only when missing.
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --generate-notes
+          gh release upload "$TAG" "$ZIP" --clobber

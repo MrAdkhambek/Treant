@@ -1,10 +1,21 @@
+import java.util.Properties
+
 plugins {
     id("org.jetbrains.intellij.platform") version "2.18.1"
     alias(libs.plugins.kotlin.jvm)
 }
 
 group = "com.adkhambek"
-version = "1.0.0"
+
+// Track the root build's VERSION_NAME rather than keeping a second copy here: a tagged
+// release should produce a plugin ZIP carrying that version. This is a standalone Gradle
+// build, so the property is read from the root gradle.properties directly.
+// `java` in a Gradle Kotlin DSL script resolves to the Java plugin extension, so the
+// package has to be imported rather than fully qualified inline.
+val rootProperties = Properties().apply {
+    rootDir.resolve("../gradle.properties").inputStream().use { load(it) }
+}
+version = rootProperties.getProperty("VERSION_NAME")
 
 repositories {
     mavenCentral()
@@ -34,7 +45,7 @@ intellijPlatform {
     pluginConfiguration {
         id = "com.adkhambek.treant.idea"
         name = "Treant"
-        version = "1.0.0"
+        version = project.version.toString()
         ideaVersion {
             sinceBuild = "251"
         }

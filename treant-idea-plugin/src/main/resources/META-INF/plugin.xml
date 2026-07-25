@@ -13,7 +13,6 @@
         <p>This IDE plugin provides full editor support for Treant-generated code:</p>
         <ul>
             <li><b>Symbol resolution</b> — the generated <code>log</code> companion property is recognized by the IDE, enabling code completion and navigation</li>
-            <li><b>Gutter icons</b> — annotated classes display a marker indicating the generated logger</li>
             <li><b>Quick documentation</b> — hover or press Ctrl+Q on the generated <code>log</code> property to see its type and origin annotation</li>
             <li><b>Conflict inspection</b> — warns when a manually defined <code>log</code> in a companion object conflicts with the Treant-generated one</li>
         </ul>
@@ -23,7 +22,6 @@
   <change-notes><![CDATA[<b>1.0.0</b>
         <ul>
             <li>Bundled FIR compiler plugin provider for K2 analysis</li>
-            <li>Gutter icon line marker for Treant-annotated classes</li>
             <li>Documentation provider for generated <code>log</code> property</li>
             <li>Inspection for conflicting manual logger definitions</li>
         </ul>]]></change-notes>
@@ -34,7 +32,6 @@
     <supportsKotlinPluginMode supportsK1="false" supportsK2="true" />
   </extensions>
   <extensions defaultExtensionNs="com.intellij">
-    <codeInsight.lineMarkerProvider language="kotlin" implementationClass="com.adkhambek.treant.idea.TreantLineMarkerProvider" />
     <lang.documentationProvider language="kotlin" implementationClass="com.adkhambek.treant.idea.TreantDocumentationProvider" />
     <localInspection language="kotlin" shortName="TreantManualLogger" displayName="Manual log conflicts with Treant generated log" groupName="Treant" enabledByDefault="true" level="WARNING" implementationClass="com.adkhambek.treant.idea.TreantManualLoggerInspection" />
   </extensions>

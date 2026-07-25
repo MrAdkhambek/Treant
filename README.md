@@ -111,20 +111,42 @@ dependencies {
 | `treant-annotations`   | Logging annotations (`@Slf4j`, `@Log`, `@Log4j`, `@Log4j2`, `@CommonsLog`, `@XSlf4j`) |
 | `treant-compiler`      | Kotlin compiler plugin (FIR declaration generation + IR backend)                      |
 | `treant-gradle-plugin` | Gradle integration for applying the compiler plugin                                   |
-| `treant-idea-plugin`   | IntelliJ IDEA plugin — gutter icons, documentation, and inspections                   |
+| `treant-idea-plugin`   | IntelliJ IDEA plugin — IDE resolution, documentation, and inspections                |
 | `app`                  | Sample application                                                                    |
 
 ## IntelliJ IDEA Plugin
 
-The optional IDE plugin provides:
+The IDE plugin provides:
 
-- **Symbol resolution** — the generated `log` companion property is recognized by the IDE, enabling code completion and
-  navigation
-- **Gutter icons** — annotated classes display a marker indicating the generated logger
-- **Quick documentation** — hover or press Ctrl+Q on the generated `log` property to see its type and origin annotation
+- **Symbol resolution** — the generated `log` property is recognized by the IDE, so it resolves, completes and navigates
+- **Quick documentation** — hover or press Ctrl+Q on `log` to see its type and origin annotation
 - **Conflict inspection** — warns when a manually defined `log` in a companion object conflicts with the generated one
 
-Requires K2 compiler mode.
+Requires K2 mode.
+
+### Why it is not optional
+
+The IDE will not run a third-party compiler plugin from your build. Kotlin's
+[custom compiler plugins][custom-plugins] documentation explains why:
+
+> Each version of IntelliJ IDEA and Android Studio includes a development version of the Kotlin compiler. This version
+> is specific to the IDE and is not binary compatible with the released Kotlin compiler. […] For this reason, community
+> plugins aren't loaded by default.
+
+So without the IDE plugin the build succeeds while the editor still reports `log` as an unresolved reference. The plugin
+implements `KotlinBundledFirCompilerPluginProvider`, handing the IDE a compiler jar built against *its* Kotlin — the
+same substitution JetBrains applies to bundled plugins such as kotlinx-serialization. Everything else the plugin does is
+convenience; this part is what makes the generated code visible to the IDE at all.
+
+The practical consequence is the one the documentation warns about: **when you update the IDE, update the plugin too.**
+
+### Installing
+
+Each tagged release attaches `treant-idea-plugin-<version>.zip` to its
+[GitHub release][releases]. Install it with *Settings → Plugins → ⚙ → Install Plugin from Disk…*
+
+[custom-plugins]: https://kotlinlang.org/docs/custom-compiler-plugins.html
+[releases]: https://github.com/MrAdkhambek/Treant/releases
 
 ## How It Works
 
@@ -134,6 +156,24 @@ Treant hooks into two phases of the Kotlin compiler:
    checker recognize it
 2. **IR (Intermediate Representation)** — generates the actual logger initialization code (
    `LoggerFactory.getLogger(...)`, etc.) in the compiled output
+
+## Releasing
+
+Pushing a `v*` tag runs two independent workflows:
+
+| Workflow | Produces |
+|---|---|
+| **Publish to Maven Central** | `treant-annotations`, `treant-compiler`, `treant-gradle-plugin` |
+| **Release IDEA plugin** | `treant-idea-plugin-<version>.zip`, attached to the GitHub release |
+
+They are separate so a Maven Central failure does not withhold the IDE plugin, or the
+reverse. Both take their version from `VERSION_NAME` in `gradle.properties`, so bump it
+before tagging.
+
+The IDE plugin bundles the compiler so the IDE can run the FIR plugin against its own
+Kotlin. `treant-idea-plugin/libs/treant-compiler.jar` is committed but goes stale silently,
+so the release workflow always rebuilds it from source and fails if the result does not
+contain the plugin registrar.
 
 ---
 
