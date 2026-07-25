@@ -1,4 +1,3 @@
-import com.vanniktech.maven.publish.DeploymentValidation
 import java.util.Properties
 
 plugins {
@@ -61,12 +60,9 @@ mavenPublishing {
     // Stated explicitly: without it the plugin falls back to the GROUP / VERSION_NAME
     // properties, which are exactly the stale local copies this build no longer keeps.
     coordinates(group.toString(), "treant-gradle-plugin", version.toString())
-    // See publishing-convention.gradle.kts: fail the build when Central rejects the
-    // deployment rather than reporting success for an upload that never validated.
-    publishToMavenCentral(
-        automaticRelease = false,
-        validateDeployment = DeploymentValidation.VALIDATED,
-    )
+    // Staged for manual release; the workflow verifies the Portal verdict afterwards.
+    // See publishing-convention.gradle.kts.
+    publishToMavenCentral()
     signAllPublications()
 }
 
