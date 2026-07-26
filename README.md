@@ -82,13 +82,15 @@ pluginManagement {
 }
 ```
 
-Then apply the plugin and add the annotations dependency:
+Then apply the plugin and add the annotations dependency. The latest version is the one on
+the Maven Central badge above; the Gradle plugin resolves the matching compiler itself, so
+it is the only Treant version you write:
 
 ```kotlin
 // build.gradle.kts
 plugins {
     kotlin("jvm")
-    id("com.adkhambek.treant")
+    id("com.adkhambek.treant") version "<version>"
 }
 
 dependencies {
@@ -159,7 +161,12 @@ Treant hooks into two phases of the Kotlin compiler:
 
 ## Releasing
 
-Pushing a `v*` tag runs two independent workflows:
+1. Bump `VERSION_NAME` in the root `gradle.properties`.
+2. Commit, then tag: `git tag -a v1.2.3 -m "Treant 1.2.3" && git push origin v1.2.3`.
+3. Release the staged deployment at
+   [central.sonatype.com/publishing/deployments](https://central.sonatype.com/publishing/deployments).
+
+Pushing the tag runs two independent workflows:
 
 | Workflow | Produces |
 |---|---|
@@ -167,13 +174,31 @@ Pushing a `v*` tag runs two independent workflows:
 | **Release IDEA plugin** | `treant-idea-plugin-<version>.zip`, attached to the GitHub release |
 
 They are separate so a Maven Central failure does not withhold the IDE plugin, or the
-reverse. Both take their version from `VERSION_NAME` in `gradle.properties`, so bump it
-before tagging.
+reverse.
+
+`VERSION_NAME` in the root `gradle.properties` is the only place the version is written.
+`treant-gradle-plugin` and `treant-idea-plugin` are standalone Gradle builds that do not
+inherit it, so both read that file directly — the gradle plugin previously kept its own
+copy and shipped a release one version behind.
+
+### Uploading is not the same as being accepted
+
+The Portal validates asynchronously, so the Gradle task finishes long before Central
+decides. A rejected deployment — bad signature, incomplete POM, a version that already
+exists — leaves the publish step green. The workflow therefore polls the deployment status
+itself and fails with the Portal's own error text.
+
+The plugin can wait for that verdict natively, but only when `automaticRelease` is enabled,
+which publishes the version the moment it validates. Deployments are deliberately left
+**staged** so that making a version permanent stays a manual step.
+
+### The bundled compiler jar
 
 The IDE plugin bundles the compiler so the IDE can run the FIR plugin against its own
-Kotlin. `treant-idea-plugin/libs/treant-compiler.jar` is committed but goes stale silently,
-so the release workflow always rebuilds it from source and fails if the result does not
-contain the plugin registrar.
+Kotlin. `treant-idea-plugin/libs/treant-compiler.jar` is committed and goes stale silently
+— it was once two Kotlin versions behind the rest of the repo — so the release workflow
+always rebuilds it from source and fails if the result does not contain the plugin
+registrar.
 
 ---
 
